@@ -1,0 +1,38 @@
+name: CI                        # Name shown in GitHub Actions tab
+
+on:                             # Trigger events
+  push:
+    branches:
+      - develop                 # Runs on every push to develop
+      - 'feature/**'            # Runs on any branch matching feature/anything
+                                # Quotes required — ** is a glob wildcard
+
+jobs:
+  build-and-test:               # Job ID (arbitrary name, used internally)
+    runs-on: ubuntu-latest      # GitHub-hosted runner — fresh Ubuntu VM each run
+
+    steps:
+      - name: Checkout code           # Step 1: pull the repo into the runner
+        uses: actions/checkout@v3     # Official action — clones your repo
+
+      - name: Setup .NET              # Step 2: install the .NET SDK
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '8.0.x'     # Use whatever version your app targets
+                                      # 8.0.x = latest patch of .NET 8
+
+      - name: Restore dependencies    # Step 3: dotnet restore
+        run: dotnet restore           # Downloads NuGet packages declared in .csproj
+                                      # Must run before build — build will fail without packages
+
+      - name: Build                   # Step 4: dotnet build
+        run: dotnet build --no-restore --configuration Release
+        # --no-restore  → skip restore (already done above, saves time)
+        # --configuration Release → compile in Release mode (optimised, no debug symbols)
+
+      - name: Run tests               # Step 5: dotnet test
+        run: dotnet test --no-build --configuration Release --verbosity normal
+        # --no-build    → skip build (already done above)
+        # --verbosity normal → prints each test name + pass/fail to the log
+        # Runs BOTH unit tests and integration tests automatically
+        # (dotnet test discovers all *Test*.csproj projects in the solution)
